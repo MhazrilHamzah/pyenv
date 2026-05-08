@@ -199,11 +199,17 @@ def main():
     VersionDirectory.existing.populate()
     VersionDirectory.available.populate()
 
-    for initial_release in (v for v in frozenset(VersionDirectory.available.keys())
-                            if v.micro == 0 and v not in VersionDirectory.existing):
-        # may actually be a prerelease
-        VersionDirectory.available.get_store_available_source_downloads(initial_release, True)
-        del initial_release
+    # Prereleases are placed under the same directory as the corresponding release.
+    # So until we know the release is out, its directory is a potential prerelease directory.
+    # Normally, prereleases are only made for initial releases (x.y.0) --
+    # but rarely, they may make them for other releases (e.g. 3.14.5).
+    for release in (v for v in frozenset(VersionDirectory.available.keys())     #refining changes the
+                                                                                #corresponding directory key
+                                                                                #which breaks iteration
+                                                                                #so have to iterate over a copy
+                            if v not in VersionDirectory.existing):
+        VersionDirectory.available.get_store_available_source_downloads(release, True)
+        del release
 
     versions_to_add = sorted(VersionDirectory.available.keys() - VersionDirectory.existing.keys())
 
